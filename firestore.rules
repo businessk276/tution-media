@@ -1,0 +1,162 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/tutionmedia/$(request.auth.uid)).data;
+    }
+
+    function activeStudent() {
+      return signedIn()
+        && myProfile().role == 'student'
+        && myProfile().accountStatus == 'active';
+    }
+
+    function approvedTeacher() {
+      return signedIn()
+        && myProfile().role == 'teacher'
+        && myProfile().accountStatus == 'active'
+        && myProfile().verificationStatus == 'approved';
+    }
+
+    function validStudent(data) {
+      return data.keys().hasAll([
+          'role', 'fullName', 'email', 'mobileNumber', 'gender', 'city',
+          'educationLevel', 'subjectsNeeded', 'learningMode', 'createdAt',
+          'accountStatus'
+        ])
+        && data.keys().hasOnly([
+          'role', 'fullName', 'email', 'mobileNumber', 'gender', 'city',
+          'educationLevel', 'subjectsNeeded', 'learningMode', 'createdAt',
+          'accountStatus'
+        ])
+        && data.role == 'student'
+        && data.fullName is string
+        && data.fullName.size() >= 2
+        && data.fullName.size() <= 100
+        && data.email == request.auth.token.email
+        && data.mobileNumber is string
+        && data.mobileNumber.size() >= 8
+        && data.mobileNumber.size() <= 20
+        && data.gender in ['Female', 'Male', 'Prefer not to say']
+        && data.city is string
+        && data.educationLevel in ['Primary', 'Middle School', 'High School', 'University', 'Other']
+        && data.subjectsNeeded is list
+        && data.subjectsNeeded.size() > 0
+        && data.learningMode in ['Online', 'In-person']
+        && data.accountStatus == 'active'
+        && data.createdAt is string;
+    }
+
+    function validTeacher(data) {
+      return data.keys().hasAll([
+          'role', 'fullName', 'email', 'mobileNumber', 'gender', 'city',
+          'subjects', 'teachingLevel', 'teachingMode', 'yearsExperience',
+          'qualification', 'createdAt', 'accountStatus', 'verificationStatus'
+        ])
+        && data.keys().hasOnly([
+          'role', 'fullName', 'email', 'mobileNumber', 'gender', 'city',
+          'subjects', 'teachingLevel', 'teachingMode', 'yearsExperience',
+          'qualification', 'createdAt', 'accountStatus', 'verificationStatus'
+        ])
+        && data.role == 'teacher'
+        && data.fullName is string
+        && data.fullName.size() >= 2
+        && data.fullName.size() <= 100
+        && data.email == request.auth.token.email
+        && data.mobileNumber is string
+        && data.mobileNumber.matches('^\\+966[0-9]{8,10}$')
+        && data.gender in ['Female', 'Male', 'Prefer not to say']
+        && data.city is string
+        && data.subjects is list
+        && data.subjects.size() > 0
+        && data.teachingLevel in ['Primary', 'Middle School', 'High School', 'University']
+        && data.teachingMode in ['Online', 'In-person', 'Both']
+        && data.yearsExperience is int
+        && data.yearsExperience >= 0
+        && data.yearsExperience <= 60
+        && data.qualification is string
+        && data.qualification.size() >= 2
+        && data.qualification.size() <= 120
+        && data.accountStatus == 'active'
+        && data.verificationStatus == 'pending'
+        && data.createdAt is string;
+    }
+
+    function validTuitionPost(data) {
+      return data.keys().hasAll([
+          'title', 'classLevel', 'subject', 'numberOfStudents',
+          'preferredTeacherGender', 'daysPerWeek', 'preferredTime',
+          'salaryMin', 'salaryMax', 'district', 'area', 'tuitionType',
+          'studentGender', 'description', 'contactMethod', 'createdBy',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'title', 'classLevel', 'subject', 'numberOfStudents',
+          'preferredTeacherGender', 'daysPerWeek', 'preferredTime',
+          'salaryMin', 'salaryMax', 'district', 'area', 'tuitionType',
+          'studentGender', 'description', 'contactMethod', 'createdBy',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.title is string && data.title.size() >= 5 && data.title.size() <= 120
+        && data.classLevel is string
+        && data.subject is string
+        && data.numberOfStudents in ['1', '2', 'Group']
+        && data.preferredTeacherGender in ['Male', 'Female', 'Any']
+        && data.daysPerWeek is int && data.daysPerWeek >= 3 && data.daysPerWeek <= 6
+        && data.preferredTime is string && data.preferredTime.size() <= 80
+        && data.salaryMin is int && data.salaryMin > 0
+        && data.salaryMax is int && data.salaryMax >= data.salaryMin
+        && data.district is string && data.district.size() > 0
+        && data.area is string && data.area.size() > 0
+        && data.tuitionType in ['Home', 'Online']
+        && data.studentGender in ['Male', 'Female']
+        && data.description is string && data.description.size() >= 10 && data.description.size() <= 2000
+        && data.contactMethod in ['Phone', 'WhatsApp', 'Platform Message']
+        && data.createdBy == request.auth.uid
+        && data.status == 'pending'
+        && data.createdAt is string
+        && data.updatedAt is string;
+    }
+
+    match /tutionmedia/{uid} {
+      allow get: if owns(uid)
+        || (activeStudent()
+          && resource.data.role == 'teacher'
+          && resource.data.accountStatus == 'active'
+          && resource.data.verificationStatus == 'approved');
+      allow list: if activeStudent()
+        && resource.data.role == 'teacher'
+        && resource.data.accountStatus == 'active'
+        && resource.data.verificationStatus == 'approved';
+      allow create: if owns(uid)
+        && (validStudent(request.resource.data) || validTeacher(request.resource.data));
+      allow update, delete: if false;
+    }
+
+    match /tuitionPosts/{postId} {
+      allow get, list: if (signedIn() && resource.data.createdBy == request.auth.uid)
+        || (approvedTeacher() && resource.data.status in ['pending', 'approved']);
+      allow create: if activeStudent()
+        && request.resource.data.status == 'approved'
+        && validTuitionPost(request.resource.data);
+      allow update: if activeStudent()
+        && resource.data.createdBy == request.auth.uid
+        && resource.data.status in ['pending', 'approved', 'rejected']
+        && request.resource.data.status == 'approved'
+        && validTuitionPost(request.resource.data);
+      allow delete: if activeStudent()
+        && resource.data.createdBy == request.auth.uid
+        && resource.data.status in ['pending', 'approved', 'rejected'];
+    }
+
+  }
+}
