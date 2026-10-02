@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import CircularLoader from "@/app/circular-loader";
 import { onAuthStateChanged } from "firebase/auth";
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { type FormEvent, useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { classLevels, districts, formatTuitionBudget, tuitionSubjects, type TuitionPost } from "@/lib/marketplace";
@@ -70,7 +71,7 @@ export default function StudentDashboard() {
       tuitionType: String(values.get("tuitionType") ?? "Home") as TuitionPost["tuitionType"],
       studentGender: String(values.get("studentGender") ?? "Male") as TuitionPost["studentGender"],
       description: String(values.get("description") ?? "").trim(),
-      contactMethod: String(values.get("contactMethod") ?? "Platform Message") as TuitionPost["contactMethod"],
+      contactNumber: String(values.get("contactNumber") ?? "").trim(),
       createdBy: student.uid,
       status: "approved" as const,
       createdAt: editingPost?.createdAt ?? now,
@@ -79,7 +80,7 @@ export default function StudentDashboard() {
 
     try {
       if (editingPost) {
-        await updateDoc(doc(db, "tuitionPosts", editingPost.id), postData);
+        await updateDoc(doc(db, "tuitionPosts", editingPost.id), { ...postData, contactMethod: deleteField() });
         setPosts((current) => current.map((post) => post.id === editingPost.id ? { ...postData, id: post.id } : post));
         setEditingPost(null);
         setMessage("Your changes were saved and are visible to verified teachers.");
@@ -109,10 +110,6 @@ export default function StudentDashboard() {
 
   return (
     <main className="portal-page">
-      <header className="portal-header">
-        <Link className="portal-brand" href="/">Tuition Media</Link>
-        <nav><Link href="/teachers">Find teachers</Link><Link href="/">Home</Link></nav>
-      </header>
       <section className="portal-wrap">
         <div className="portal-heading">
           <p className="portal-eyebrow">Student / guardian</p>
@@ -120,7 +117,7 @@ export default function StudentDashboard() {
           <p>Create a request, keep an eye on its review, and find a teacher who fits.</p>
         </div>
 
-        {loading ? <p className="portal-state">Loading your account…</p> : !student ? (
+        {loading ? <div className="portal-state"><CircularLoader label="Loading your account…" /></div> : !student ? (
           <div className="portal-empty"><h2>Sign in to manage tuition</h2><p>Student and guardian accounts can create private tuition posts and follow their approval status here.</p><Link className="portal-button" href="/auth">Sign in or register</Link></div>
         ) : <div className="portal-columns">
           <section className="portal-panel">
@@ -139,9 +136,9 @@ export default function StudentDashboard() {
               <label className="portal-field">Area<input name="area" defaultValue={editingPost?.area} placeholder="Area or neighbourhood" required /></label>
               <label className="portal-field">Tuition type<select name="tuitionType" defaultValue={editingPost?.tuitionType ?? "Home"} required><option>Home</option><option>Online</option></select></label>
               <label className="portal-field">Student gender<select name="studentGender" defaultValue={editingPost?.studentGender ?? "Male"} required><option>Male</option><option>Female</option></select></label>
-              <label className="portal-field">Contact method<select name="contactMethod" defaultValue={editingPost?.contactMethod ?? "Platform Message"} required><option>Phone</option><option>WhatsApp</option><option>Platform Message</option></select></label>
+              <label className="portal-field">Contact number<input name="contactNumber" type="tel" inputMode="tel" autoComplete="tel" pattern="[+]?[0-9 ]{8,20}" maxLength={20} defaultValue={editingPost?.contactNumber ?? ""} placeholder="e.g. +880 1XXXXXXXXX" required /></label>
               <label className="portal-field portal-field-wide">Requirements / description<textarea name="description" defaultValue={editingPost?.description} minLength={10} maxLength={2000} rows={4} placeholder="Share the learning goals, schedule preferences, and anything a tutor should know." required /></label>
-              <div className="portal-form-actions"><button className="portal-button" type="submit" disabled={saving}>{saving ? "Saving…" : editingPost ? "Save changes" : "Submit for approval"}</button>{editingPost && <button className="portal-link-button" type="button" onClick={() => setEditingPost(null)}>Cancel</button>}</div>
+              <div className="portal-form-actions"><button className="portal-button" type="submit" disabled={saving}>{saving && <CircularLoader label="Saving tuition post" inline decorative />}{saving ? "Saving…" : editingPost ? "Save changes" : "Submit tuition post"}</button>{editingPost && <button className="portal-link-button" type="button" onClick={() => setEditingPost(null)}>Cancel</button>}</div>
             </form>
           </section>
 

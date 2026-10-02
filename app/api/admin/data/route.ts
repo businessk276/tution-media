@@ -10,7 +10,7 @@ const profileFields = new Set([
 const postFields = new Set([
   "title", "classLevel", "subject", "numberOfStudents", "preferredTeacherGender",
   "daysPerWeek", "preferredTime", "salaryMin", "salaryMax", "district", "area",
-  "tuitionType", "studentGender", "description", "contactMethod", "status",
+  "tuitionType", "studentGender", "description", "contactNumber", "status",
 ]);
 
 function sameOrigin(request: Request) {

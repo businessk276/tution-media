@@ -96,14 +96,14 @@ service cloud.firestore {
           'title', 'classLevel', 'subject', 'numberOfStudents',
           'preferredTeacherGender', 'daysPerWeek', 'preferredTime',
           'salaryMin', 'salaryMax', 'district', 'area', 'tuitionType',
-          'studentGender', 'description', 'contactMethod', 'createdBy',
+          'studentGender', 'description', 'contactNumber', 'createdBy',
           'status', 'createdAt', 'updatedAt'
         ])
         && data.keys().hasOnly([
           'title', 'classLevel', 'subject', 'numberOfStudents',
           'preferredTeacherGender', 'daysPerWeek', 'preferredTime',
           'salaryMin', 'salaryMax', 'district', 'area', 'tuitionType',
-          'studentGender', 'description', 'contactMethod', 'createdBy',
+          'studentGender', 'description', 'contactNumber', 'createdBy',
           'status', 'createdAt', 'updatedAt'
         ])
         && data.title is string && data.title.size() >= 5 && data.title.size() <= 120
@@ -120,7 +120,9 @@ service cloud.firestore {
         && data.tuitionType in ['Home', 'Online']
         && data.studentGender in ['Male', 'Female']
         && data.description is string && data.description.size() >= 10 && data.description.size() <= 2000
-        && data.contactMethod in ['Phone', 'WhatsApp', 'Platform Message']
+        && data.contactNumber is string
+        && data.contactNumber.size() >= 8
+        && data.contactNumber.size() <= 20
         && data.createdBy == request.auth.uid
         && data.status == 'pending'
         && data.createdAt is string

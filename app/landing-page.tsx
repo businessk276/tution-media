@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CircularLoader from "@/app/circular-loader";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
@@ -153,35 +154,6 @@ export default function LandingPage() {
 
   return (
     <main className="tm-landing" ref={pageRef}>
-      <header className="tm-header">
-        <Link className="tm-brand" href="/" aria-label="Tuition Media home">
-          <span className="tm-mark" aria-hidden="true">t</span>
-          <span>tuition<span className="tm-brand-light">media</span></span>
-        </Link>
-        <nav className="tm-nav" aria-label="Main navigation">
-          {checkingSession ? null : account ? <>
-            {account.role === "student" ? <Link href="#member-board">Available teachers</Link> : <Link href="#member-board">Tuition posts</Link>}
-            <Link href={account.role === "student" ? "/student" : "/teacher"}>My workspace</Link>
-          </> : <>
-            <a href="#approach">Our approach</a>
-            <Link href="/teachers">Find teachers</Link>
-            <Link href="/teacher">For tutors</Link>
-          </>}
-        </nav>
-        <div className="tm-header-actions">
-          {checkingSession ? <span className="tm-session-status" role="status">Checking account…</span> : account ? <>
-            <span className="tm-account-role">{account.role} account</span>
-            <Link className="tm-account-home" href={account.role === "teacher" ? "/teacher" : "/student"}>My workspace</Link>
-            <button className="tm-header-cta tm-signout" type="button" onClick={handleSignOut} disabled={signingOut}>
-              {signingOut ? "Signing out…" : "Sign out"}
-            </button>
-          </> : <>
-            <Link className="tm-signin" href="/auth">Sign in</Link>
-            <Link className="tm-header-cta" href="/auth">Get started <span aria-hidden="true">↗</span></Link>
-          </>}
-        </div>
-      </header>
-
       <section className="tm-hero" style={{ backgroundImage: `linear-gradient(90deg, rgb(16 38 29 / 82%) 0%, rgb(16 38 29 / 52%) 43%, rgb(16 38 29 / 8%) 100%), url("${tutorImage}")` }}>
         <div className="tm-hero-grain" aria-hidden="true" />
         <div className="tm-hero-content">
@@ -194,13 +166,13 @@ export default function LandingPage() {
               <Link className="tm-button tm-button-lime" href="/student">Add tuition post <span aria-hidden="true">↗</span></Link>
               <a className="tm-hero-secondary" href="#member-board">Available teachers <span aria-hidden="true">→</span></a>
               <button className="tm-hero-secondary tm-hero-signout" type="button" onClick={handleSignOut} disabled={signingOut}>
-                {signingOut ? "Signing out…" : "Sign out"}
+                {signingOut && <CircularLoader label="Signing out" inline decorative />}{signingOut ? "Signing out…" : "Sign out"}
               </button>
             </> : account?.role === "teacher" ? <>
               <Link className="tm-button tm-button-lime" href="/teacher">{account.verificationStatus === "approved" ? "Browse tuition posts" : "View verification status"} <span aria-hidden="true">↗</span></Link>
               {account.verificationStatus === "approved" && <a className="tm-hero-secondary" href="#member-board">All tuition posts <span aria-hidden="true">→</span></a>}
               <button className="tm-hero-secondary tm-hero-signout" type="button" onClick={handleSignOut} disabled={signingOut}>
-                {signingOut ? "Signing out…" : "Sign out"}
+                {signingOut && <CircularLoader label="Signing out" inline decorative />}{signingOut ? "Signing out…" : "Sign out"}
               </button>
             </> : <>
               <Link className="tm-button tm-button-lime" href="/teachers">Find your tutor <span aria-hidden="true">↗</span></Link>
@@ -242,7 +214,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {marketplaceError ? <p className="tm-member-state tm-member-error" role="alert">{marketplaceError}</p> : checkingSession ? <p className="tm-member-state" role="status">Loading marketplace…</p> : account.accountStatus !== "active" ? <div className="tm-member-state">
+          {marketplaceError ? <p className="tm-member-state tm-member-error" role="alert">{marketplaceError}</p> : checkingSession ? <div className="tm-member-state"><CircularLoader label="Loading marketplace…" /></div> : account.accountStatus !== "active" ? <div className="tm-member-state">
             <h3>{account.accountStatus === "suspended" ? "This account is suspended" : "Account activation needed"}</h3>
             <p>Your {account.role} account is signed in, but marketplace access is only available for active accounts. Please contact support to check your account status.</p>
           </div> : account.role === "teacher" && account.verificationStatus !== "approved" ? <div className="tm-member-state">
@@ -274,6 +246,7 @@ export default function LandingPage() {
               <p className="tm-member-detail">{post.preferredTime} · {post.preferredTeacherGender} teacher</p>
               <p className="tm-post-budget">{formatTuitionBudget(post.salaryMin, post.salaryMax)}</p>
               <p className="tm-post-description">{post.description}</p>
+              {post.contactNumber && <p className="tm-post-contact">Contact: <a href={`tel:${post.contactNumber.replace(/[^\d+]/g, "")}`}>{post.contactNumber}</a></p>}
               <Link className="tm-member-card-link" href="/teacher">Open teacher workspace <span aria-hidden="true">→</span></Link>
             </article>)}
           </div>}
@@ -352,7 +325,7 @@ export default function LandingPage() {
           <span>tuition<span className="tm-brand-light">media</span></span>
         </Link>
         <p>{account?.role === "student" ? "Find your next great teacher." : account?.role === "teacher" ? "Find your next tuition opportunity." : "Learning, made personal."}</p>
-        <div className="tm-footer-links">{account ? <><Link href={account.role === "student" ? "/student" : "/teacher"}>My workspace</Link><button type="button" onClick={() => void handleSignOut()} disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</button></> : <><a href="#approach">Our approach</a><a href="#subjects">Subjects</a><Link href="/auth">Sign in</Link></>}</div>
+        <div className="tm-footer-links">{account ? <><Link href={account.role === "student" ? "/student" : "/teacher"}>My workspace</Link><button type="button" onClick={() => void handleSignOut()} disabled={signingOut}>{signingOut && <CircularLoader label="Signing out" inline decorative />}{signingOut ? "Signing out…" : "Sign out"}</button></> : <><a href="#approach">Our approach</a><a href="#subjects">Subjects</a><Link href="/auth">Sign in</Link></>}</div>
         <span className="tm-copyright">© {new Date().getFullYear()} Tuition Media</span>
       </footer>
     </main>

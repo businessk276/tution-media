@@ -16,7 +16,7 @@ export type TuitionPost = {
   tuitionType: "Home" | "Online";
   studentGender: "Male" | "Female";
   description: string;
-  contactMethod: "Phone" | "WhatsApp" | "Platform Message";
+  contactNumber?: string;
   createdBy: string;
   status: PostStatus;
   createdAt: string;

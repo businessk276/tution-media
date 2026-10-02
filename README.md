@@ -21,7 +21,7 @@ Tuition Media connects students and guardians with verified teachers. Firebase A
 - `/teachers` — verified teacher directory (student account required).
 - `/admin` — server-validated password sign-in, then account management, teacher verification, and post moderation.
 
-Firestore rules keep student posts private to their owner and make newly submitted posts immediately available to active, verified teachers; existing pending posts are also visible. Admins can still moderate posts after submission. Teacher listings require an active student and show only approved profiles. Admin data operations use the server-only Firebase Admin SDK and an expiring, signed, HTTP-only cookie.
+Firestore rules keep student posts private to their owner and make newly submitted posts immediately available to active, verified teachers; existing pending posts are also visible. Tuition posts include a contact number, which is shown to active, verified teachers viewing open posts. Deploy updated rules after changing them with `firebase deploy --only firestore:rules`. Admins can still moderate posts after submission. Teacher listings require an active student and show only approved profiles. Admin data operations use the server-only Firebase Admin SDK and an expiring, signed, HTTP-only cookie.
 
 Admin API access requires the server-configured `ADMIN_PASSWORD` and a signed, expiring, HTTP-only session cookie. Student and teacher sign-in and registration continue to use Firebase Authentication.
 

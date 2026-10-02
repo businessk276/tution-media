@@ -12,6 +12,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import CircularLoader from "@/app/circular-loader";
 import { auth, db } from "@/lib/firebase";
 
 type Role = "student" | "teacher";
@@ -236,7 +237,7 @@ export default function AuthExperience() {
           <span>Learn at your pace. Teach your way.</span>
         </div>
 
-        {checking ? <div className="form-area session-check" role="status">Checking your account…</div> : (
+        {checking ? <div className="form-area session-check"><CircularLoader label="Checking your account…" /></div> : (
           <div className="form-area">
             <div className="role-switch" aria-label="Choose account type">
               <button type="button" aria-pressed={role === "student"} onClick={() => selectRole("student")}>I’m a student</button>
@@ -281,7 +282,7 @@ export default function AuthExperience() {
                 <div className="field field-full"><label htmlFor="password">Password</label><input id="password" name="password" type="password" autoComplete="current-password" required /></div>
               </div>}
               {message && <p className="form-message" role="alert">{message}</p>}
-              <button className="submit-button" type="submit" disabled={busy}>{busy && <span className="spinner" aria-hidden="true" />}{busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}</button>
+              <button className="submit-button" type="submit" disabled={busy}>{busy && <CircularLoader label="Please wait" inline decorative />}{busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}</button>
               <p className="form-note">Your password is protected by Firebase Authentication and is never stored in your profile.</p>
             </form>
           </div>

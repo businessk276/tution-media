@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CircularLoader from "@/app/circular-loader";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useEffect, useState } from "react";
@@ -60,10 +61,9 @@ export default function TeacherDirectory() {
 
   return (
     <main className="portal-page">
-      <header className="portal-header"><Link className="portal-brand" href="/">Tuition Media</Link><nav><Link href="/student">My tuition</Link><Link href="/">Home</Link></nav></header>
       <section className="portal-wrap">
         <div className="portal-heading"><p className="portal-eyebrow">Verified educators</p><h1>Find a teacher who fits</h1><p>Explore approved tutors by subject, qualification, and location.</p></div>
-        {loading ? <p className="portal-state">Loading teacher profiles…</p> : !isStudent ? <div className="portal-empty"><h2>Student access required</h2><p>Sign in with an active student or guardian account to browse approved teacher profiles.</p><Link className="portal-button" href="/auth">Sign in</Link></div> : <>
+        {loading ? <div className="portal-state"><CircularLoader label="Loading teacher profiles…" /></div> : !isStudent ? <div className="portal-empty"><h2>Student access required</h2><p>Sign in with an active student or guardian account to browse approved teacher profiles.</p><Link className="portal-button" href="/auth">Sign in</Link></div> : <>
           <div className="portal-filter-row"><label className="portal-field">Search teachers<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, qualification, or city" /></label><label className="portal-field">Subject<select value={subject} onChange={(event) => setSubject(event.target.value)}>{availableSubjects.map((item) => <option key={item}>{item}</option>)}</select></label><span className="portal-result-count">{filtered.length} verified tutors</span></div>
           {message && <p className="portal-message" role="alert">{message}</p>}
           {filtered.length === 0 ? <div className="portal-empty"><h2>No matching teachers yet</h2><p>Try a different search or subject.</p></div> : <div className="teacher-grid">{filtered.map((teacher) => <article className="teacher-card" key={teacher.id}>
