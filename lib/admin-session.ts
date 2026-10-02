@@ -7,8 +7,8 @@ export const adminCookieName = "tm_admin_session";
 const sessionSeconds = 60 * 60 * 4;
 
 function sessionSecret() {
-  const secret = process.env.ADMIN_SESSION_SECRET ?? process.env.FIREBASE_ADMIN_PRIVATE_KEY;
-  if (!secret || secret.length < 16) throw new Error("Configure an admin password or a session secret of at least 16 characters.");
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret || secret.length < 32) throw new Error("Configure an admin session secret of at least 32 characters.");
   return secret;
 }
 

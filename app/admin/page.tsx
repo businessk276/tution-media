@@ -1,8 +1,6 @@
 "use client";
 
 import { type FormEvent, useEffect, useState } from "react";
-import { sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { formatTuitionBudget } from "@/lib/marketplace";
 
 type AdminUser = {
@@ -41,16 +39,6 @@ type Tab = "overview" | "students" | "teachers" | "posts";
 
 const emptyData: AdminData = { users: [], posts: [] };
 
-function loginError(reason: unknown) {
-  const code = reason && typeof reason === "object" && "code" in reason ? String(reason.code) : "";
-  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
-    return "Firebase did not accept that email and password. Check that this email exists under Authentication > Users in this Firebase project, or send yourself a password-reset link.";
-  }
-  if (code === "auth/too-many-requests") return "Too many sign-in attempts. Wait a while before trying again.";
-  if (code === "auth/operation-not-allowed") return "Enable Email/Password under Firebase Console > Authentication > Sign-in method.";
-  return reason instanceof Error ? reason.message : "Could not sign in.";
-}
-
 async function api(path: string, method = "GET", body?: unknown) {
   const response = await fetch(path, {
     method,
@@ -66,7 +54,6 @@ async function api(path: string, method = "GET", body?: unknown) {
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [data, setData] = useState<AdminData>(emptyData);
   const [tab, setTab] = useState<Tab>("overview");
@@ -97,44 +84,12 @@ export default function AdminPage() {
     setBusy(true);
     setError("");
     try {
-      const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-      if (!credential.user.emailVerified) {
-        await sendEmailVerification(credential.user);
-        await signOut(auth);
-        setError("This Firebase email is not verified yet. We sent a verification link; verify it, then sign in again.");
-        return;
-      }
-      const idToken = await credential.user.getIdToken(true);
-      const response = await fetch("/api/admin/session", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${idToken}` },
-        cache: "no-store",
-      });
-      const result = await response.json().catch(() => ({}));
-      await signOut(auth);
-      if (!response.ok) throw new Error(result.error ?? "This account is not authorised for admin access.");
+      await api("/api/admin/session", "POST", { password });
       setPassword("");
-      setEmail("");
       setAuthenticated(true);
       await refresh();
     } catch (reason) {
-      setError(loginError(reason));
-    } finally { setBusy(false); }
-  };
-
-  const sendPasswordReset = async () => {
-    const targetEmail = email.trim();
-    if (!targetEmail) {
-      setError("Enter your Firebase admin email first.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      await sendPasswordResetEmail(auth, targetEmail);
-      setNotice("If this email has a Firebase account, a password reset link has been sent.");
-    } catch (reason) {
-      setError(loginError(reason));
+      setError(reason instanceof Error ? reason.message : "Admin sign-in failed.");
     } finally { setBusy(false); }
   };
 
@@ -142,7 +97,6 @@ export default function AdminPage() {
     setBusy(true);
     try {
       await api("/api/admin/session", "DELETE", {});
-      await signOut(auth);
       setAuthenticated(false);
       setData(emptyData);
       setTab("overview");
@@ -249,7 +203,7 @@ export default function AdminPage() {
   };
 
   if (checking) return <main className="admin-login-page"><p role="status">Checking admin session…</p></main>;
-  if (!authenticated) return <main className="admin-login-page"><form className="admin-login" onSubmit={login}><span className="admin-login-mark">t</span><p className="portal-eyebrow">Tuition Media · Administration</p><h1>Admin sign in</h1><p>Use your allowlisted, verified Firebase administrator account.</p><label className="portal-field">Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" required /></label><label className="portal-field">Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>{error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-notice" role="status">{notice}</p>}<button className="portal-button portal-button-full" disabled={busy}>{busy ? "Signing in…" : "Sign in securely"}</button><button className="admin-reset-link" type="button" onClick={() => void sendPasswordReset()} disabled={busy}>Send password reset link</button></form></main>;
+  if (!authenticated) return <main className="admin-login-page"><form className="admin-login" onSubmit={login}><span className="admin-login-mark">t</span><p className="portal-eyebrow">Tuition Media · Administration</p><h1>Admin sign in</h1><p>Enter the admin password to continue.</p><label className="portal-field">Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>{error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-notice" role="status">{notice}</p>}<button className="portal-button portal-button-full" disabled={busy}>{busy ? "Signing in…" : "Sign in securely"}</button></form></main>;
 
   const students = data.users.filter((user) => user.role === "student");
   const teachers = data.users.filter((user) => user.role === "teacher");
